@@ -10,8 +10,10 @@ pub extern crate mnt;
 pub mod codec;
 
 mod task;
+mod transfer_rate;
 
 pub use self::task::{Progress, Task};
+pub use self::transfer_rate::TransferRate;
 
 use anyhow::Context;
 use as_result::MapResult;

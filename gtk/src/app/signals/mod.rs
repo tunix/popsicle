@@ -8,6 +8,7 @@ use crate::flash::{FlashRequest, FlashStatus, FlashTask};
 use atomic::Atomic;
 use crossbeam_channel::TryRecvError;
 use gtk::{self, prelude::*};
+use popsicle::TransferRate;
 use std::fmt::Write;
 use std::fs::File;
 use std::sync::atomic::Ordering;
@@ -177,7 +178,7 @@ impl App {
                             )));
 
                         tasks = Some(FlashTask {
-                            previous: Arc::new(Mutex::new(vec![[0; 7]; ndestinations])),
+                            previous: Arc::new(Mutex::new(vec![TransferRate::new(); ndestinations])),
                             progress,
                             finished,
                         });
@@ -198,7 +199,7 @@ impl App {
 
                             for (id, &(ref pbar, ref label)) in flashing_devices.iter().enumerate()
                             {
-                                let prev_values = &mut previous[id];
+                                let transfer_rate = &mut previous[id];
                                 let progress = &tasks.progress[id];
                                 let finished = &tasks.finished[id];
 
@@ -216,17 +217,9 @@ impl App {
                                 if task_is_finished {
                                     label.set_label("Complete");
                                 } else {
-                                    prev_values[1] = prev_values[2];
-                                    prev_values[2] = prev_values[3];
-                                    prev_values[3] = prev_values[4];
-                                    prev_values[4] = prev_values[5];
-                                    prev_values[5] = prev_values[6];
-                                    prev_values[6] = raw_value - prev_values[0];
-                                    prev_values[0] = raw_value;
+                                    let speed = transfer_rate.update(raw_value, time_since.as_secs_f64());
 
-                                    let sum: u64 = prev_values.iter().skip(1).sum();
-                                    let per_second = sum / 3;
-                                    label.set_label(&format!("{}/s", bytesize::to_string(per_second, true)));
+                                    label.set_label(&format!("{}/s", bytesize::to_string(speed as u64, true)));
                                 }
                             }
 

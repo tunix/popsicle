@@ -3,7 +3,7 @@ use dbus::arg::{OwnedFd, RefArg, Variant};
 use dbus::blocking::{Connection, Proxy};
 use futures::executor;
 use libc;
-use popsicle::{Progress, Task};
+use popsicle::{Progress, Task, TransferRate};
 use proc_mounts::MountList;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -35,7 +35,7 @@ pub struct FlashRequest {
 
 pub struct FlashTask {
     pub progress: Arc<Vec<Atomic<u64>>>,
-    pub previous: Arc<Mutex<Vec<[u64; 7]>>>,
+    pub previous: Arc<Mutex<Vec<TransferRate>>>,
     pub finished: Arc<Vec<Atomic<bool>>>,
 }
 
