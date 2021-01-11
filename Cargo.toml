@@ -19,6 +19,7 @@ members = ["cli", "gtk"]
 
 [dependencies]
 anyhow = "1"
+async-trait = "0.1"
 as-result = "0.2"
 async-std = "1"
 derive-new = "0.5"

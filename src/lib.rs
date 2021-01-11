@@ -9,9 +9,12 @@ pub extern crate mnt;
 
 pub mod codec;
 
+mod dd_task;
 mod task;
+mod unix_backend;
+mod win_task;
 
-pub use self::task::{Progress, Task};
+pub use self::task::{Progress, Task as Task_}; // XXX
 
 use anyhow::Context;
 use as_result::MapResult;
@@ -20,10 +23,12 @@ use async_std::{
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
+use async_trait::async_trait;
 use futures::{executor, prelude::*};
 use mnt::MountEntry;
 use std::{
     io,
+    marker::PhantomData,
     os::unix::{ffi::OsStrExt, fs::FileTypeExt},
     process::Command,
 };
@@ -167,3 +172,53 @@ pub async fn disks_from_args<D: Iterator<Item = Box<Path>>>(
 
     Ok(disks)
 }
+
+#[async_trait]
+trait Backend {
+    type Device: Device;
+
+    async fn devices() -> Vec<Self::Device>;
+    // XXX best API to refresh by polling or notification?
+    // Can inotify do that?
+}
+
+#[async_trait]
+trait Device: Clone + Send + Sync { // XXX Sync
+    type Backend: Backend;
+
+    /// Unmounts any mounted partitions
+    async fn unmount(&self, force: bool);
+
+    async fn wait_removed(&self);
+    // Is this a good way to deal with events asynchronously in Rust? Make it awaitable?
+    // No way to remove handler
+    
+    async fn open(&self) -> io::Result<File>;
+
+    fn vendor(&self) -> &str;
+    fn model(&self) -> &str;
+    // /dev/sda or such
+    fn display_id(&self) -> &str;
+    // These could be combined into just label(), or name() and display_id()
+    fn capacity(&self) -> usize;
+}
+
+#[async_trait]
+trait Task<B: Backend> {
+    // Could it take a Read + Seek? Not useful with extractor... define a new type?
+    // Trait with a method to return a reader
+    // Not useful if task needs to mount iso
+    fn new(image_path: &Path) -> Self;
+    async fn subscribe(device: B::Device) -> io::Result<()>;
+    async fn process();
+}
+
+// could it be abstracted to apply this as a filter instead?
+struct DDExtractTask {}
+
+struct DevBackend {}
+struct UDisksBackend {}
+struct WinBackend {}
+// https://docs.microsoft.com/en-us/windows/win32/fileio/volume-management-functions
+
+
