@@ -14,7 +14,9 @@ mod task;
 mod unix_backend;
 mod win_task;
 
+pub use self::dd_task::DDTask;
 pub use self::task::{Progress, Task as Task_}; // XXX
+pub use self::unix_backend::{UnixBackend, UnixDevice};
 
 use anyhow::Context;
 use as_result::MapResult;
@@ -28,7 +30,6 @@ use futures::{executor, prelude::*};
 use mnt::MountEntry;
 use std::{
     io,
-    marker::PhantomData,
     os::unix::{ffi::OsStrExt, fs::FileTypeExt},
     process::Command,
 };
@@ -174,7 +175,7 @@ pub async fn disks_from_args<D: Iterator<Item = Box<Path>>>(
 }
 
 #[async_trait]
-trait Backend {
+pub trait Backend: Send {
     type Device: Device;
 
     async fn devices() -> Vec<Self::Device>;
@@ -183,7 +184,7 @@ trait Backend {
 }
 
 #[async_trait]
-trait Device: Clone + Send + Sync { // XXX Sync
+pub trait Device: Clone + Send + Sync { // XXX Sync
     type Backend: Backend;
 
     /// Unmounts any mounted partitions
@@ -204,13 +205,13 @@ trait Device: Clone + Send + Sync { // XXX Sync
 }
 
 #[async_trait]
-trait Task<B: Backend> {
+pub trait Task<D: Device, P: Progress>: Send {
     // Could it take a Read + Seek? Not useful with extractor... define a new type?
     // Trait with a method to return a reader
     // Not useful if task needs to mount iso
-    fn new(image_path: &Path) -> Self;
-    async fn subscribe(device: B::Device) -> io::Result<()>;
-    async fn process();
+    fn new<T: AsRef<Path>>(image_path: &T, check: bool) -> Self;
+    async fn subscribe(&mut self, device: D, progress_device: P::Device, progress: P) -> io::Result<()>;
+    async fn process(self, buf: &mut [u8]) -> anyhow::Result<()>;
 }
 
 // could it be abstracted to apply this as a filter instead?

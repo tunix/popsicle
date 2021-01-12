@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::{Backend, Device};
 
-struct UnixBackend;
+pub struct UnixBackend;
 
 #[async_trait]
 impl Backend for UnixBackend {
@@ -20,7 +20,7 @@ impl Backend for UnixBackend {
 }
 
 #[derive(Clone)]
-struct UnixDevice;
+pub struct UnixDevice;
 
 #[async_trait]
 impl Device for UnixDevice {

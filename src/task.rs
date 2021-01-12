@@ -3,8 +3,8 @@ use async_std::{fs::File, prelude::*};
 use srmw::*;
 use std::{collections::HashMap, io::SeekFrom, time::Instant};
 
-pub trait Progress {
-    type Device;
+pub trait Progress: Send {
+    type Device: Send;
     fn message(&mut self, device: &Self::Device, kind: &str, message: &str);
     fn finish(&mut self);
     fn set(&mut self, value: u64);

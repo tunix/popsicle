@@ -22,7 +22,7 @@ use futures::{
     prelude::*,
 };
 use pbr::{MultiBar, Pipe, ProgressBar, Units};
-use popsicle::{mnt, Progress, Task};
+use popsicle::{mnt, Progress, Task, DDTask, UnixBackend};
 use std::{
     io::{self, Write},
     process, thread,
@@ -134,7 +134,7 @@ async fn popsicle(
         println!();
 
         let mut mb = MultiBar::new();
-        let mut task = Task::new(image, check);
+        let mut task = DDTask::new(&image_path, check);
 
         for (disk_path, disk) in disks {
             let pb = InteractiveProgress::new(cascade! {
@@ -157,7 +157,7 @@ async fn popsicle(
     } else {
         let (etx, erx) = mpsc::unbounded();
         let mut paths = Vec::new();
-        let mut task = Task::new(image, check);
+        let mut task = DDTask::new(&image_path, check);
 
         for (disk_path, disk) in disks {
             let pb = MachineProgress::new(paths.len(), etx.clone());
