@@ -1,30 +1,23 @@
 use async_std::fs::File;
 use async_trait::async_trait;
 use std::io;
-use std::marker::PhantomData;
-use std::path::Path;
+use async_std::path::Path;
 
-use crate::{Backend, Device};
-
-pub struct UnixBackend;
-
-#[async_trait]
-impl Backend for UnixBackend {
-    type Device = UnixDevice;
-
-    async fn devices() -> Vec<Self::Device> {
-        // XXX
-        Vec::new()
-    }
-
-}
+use crate::Device;
 
 #[derive(Clone)]
 pub struct UnixDevice;
 
 #[async_trait]
 impl Device for UnixDevice {
-    type Backend = UnixBackend;
+    async fn devices() -> Vec<Self> {
+        // XXX
+        Vec::new()
+    }
+
+    async fn from_path<P: AsRef<Path> + Send + Sync>(path: P) -> anyhow::Result<Self> {
+        Err(anyhow::Error::msg("foo"))
+    }
 
     async fn unmount(&self, force: bool) {
         // TODO

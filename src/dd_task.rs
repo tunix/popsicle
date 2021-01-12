@@ -3,7 +3,7 @@ use std::io;
 use std::marker::PhantomData;
 use async_std::path::Path;
 
-use crate::{Backend, Device, Progress, Task};
+use crate::{Device, Progress, Task};
 
 // Equivalent to just dding a file
 pub struct DDTask<D: Device, P: Progress> {

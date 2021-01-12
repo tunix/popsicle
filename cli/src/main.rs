@@ -22,7 +22,7 @@ use futures::{
     prelude::*,
 };
 use pbr::{MultiBar, Pipe, ProgressBar, Units};
-use popsicle::{mnt, Progress, Task, DDTask, UnixBackend};
+use popsicle::{mnt, Progress, Task, DDTask, Device, UnixDevice};
 use std::{
     io::{self, Write},
     process, thread,
@@ -143,6 +143,7 @@ async fn popsicle(
                 ..message(&format!("W {}: ", disk_path.display()));
             });
 
+            let disk = UnixDevice::from_path(&disk_path).await.unwrap(); // XXX unwrap
             task.subscribe(disk, disk_path, pb);
         }
 
@@ -162,6 +163,7 @@ async fn popsicle(
         for (disk_path, disk) in disks {
             let pb = MachineProgress::new(paths.len(), etx.clone());
             paths.push(disk_path.clone());
+            let disk = UnixDevice::from_path(&disk_path).await.unwrap(); // XXX unwrap
             task.subscribe(disk, disk_path, pb);
         }
 

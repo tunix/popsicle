@@ -16,7 +16,7 @@ mod win_task;
 
 pub use self::dd_task::DDTask;
 pub use self::task::{Progress, Task as Task_}; // XXX
-pub use self::unix_backend::{UnixBackend, UnixDevice};
+pub use self::unix_backend::UnixDevice;
 
 use anyhow::Context;
 use as_result::MapResult;
@@ -175,17 +175,13 @@ pub async fn disks_from_args<D: Iterator<Item = Box<Path>>>(
 }
 
 #[async_trait]
-pub trait Backend: Send {
-    type Device: Device;
+pub trait Device: Clone + Send + Sync { // XXX Sync
 
-    async fn devices() -> Vec<Self::Device>;
+    async fn devices() -> Vec<Self>;
     // XXX best API to refresh by polling or notification?
     // Can inotify do that?
-}
 
-#[async_trait]
-pub trait Device: Clone + Send + Sync { // XXX Sync
-    type Backend: Backend;
+    async fn from_path<P: AsRef<Path> + Send + Sync>(path: P) -> anyhow::Result<Self>;
 
     /// Unmounts any mounted partitions
     async fn unmount(&self, force: bool);
