@@ -184,7 +184,7 @@ pub trait Device: Clone + Send + Sync { // XXX Sync
     async fn from_path<P: AsRef<Path> + Send + Sync>(path: P) -> anyhow::Result<Self>;
 
     /// Unmounts any mounted partitions
-    async fn unmount(&self, force: bool);
+    async fn unmount(&self, force: bool) -> anyhow::Result<()>;
 
     async fn wait_removed(&self);
     // Is this a good way to deal with events asynchronously in Rust? Make it awaitable?

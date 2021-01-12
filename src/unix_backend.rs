@@ -19,8 +19,9 @@ impl Device for UnixDevice {
         Err(anyhow::Error::msg("foo"))
     }
 
-    async fn unmount(&self, force: bool) {
+    async fn unmount(&self, force: bool) -> anyhow::Result<()> {
         // TODO
+        Ok(())
     }
 
     async fn wait_removed(&self) {

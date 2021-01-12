@@ -144,6 +144,11 @@ async fn popsicle(
             });
 
             let disk = UnixDevice::from_path(&disk_path).await.unwrap(); // XXX unwrap
+
+            if matches.is_present("unmount") {
+                disk.unmount(true).await.unwrap(); // XXX
+            }
+
             task.subscribe(disk, disk_path, pb);
         }
 
