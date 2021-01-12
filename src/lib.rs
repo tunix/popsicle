@@ -19,19 +19,14 @@ pub use self::task::{Progress, Task as Task_}; // XXX
 pub use self::unix_backend::UnixDevice;
 
 use anyhow::Context;
-use as_result::MapResult;
 use async_std::{
-    fs::{self, File, OpenOptions},
-    os::unix::fs::OpenOptionsExt,
-    path::{Path, PathBuf},
+    fs::File,
+    path::Path,
 };
 use async_trait::async_trait;
-use futures::{executor, prelude::*};
-use mnt::MountEntry;
+use futures::prelude::*;
 use std::{
     io,
-    os::unix::{ffi::OsStrExt, fs::FileTypeExt},
-    process::Command,
 };
 use usb_disk_probe::stream::UsbDiskProbe;
 
@@ -104,74 +99,6 @@ pub async fn usb_disk_devices(disks: &mut Vec<Box<Path>>) -> anyhow::Result<()> 
     }
 
     Ok(())
-}
-
-/// Stores all discovered USB disk paths into the supplied `disks` vector.
-pub fn get_disk_args(disks: &mut Vec<Box<Path>>) -> Result<(), DiskError> {
-    executor::block_on(
-        async move { usb_disk_devices(disks).await.map_err(DiskError::DeviceStream) },
-    )
-}
-
-pub async fn disks_from_args<D: Iterator<Item = Box<Path>>>(
-    disk_args: D,
-    mounts: &[MountEntry],
-    unmount: bool,
-) -> Result<Vec<(Box<Path>, File)>, DiskError> {
-    let mut disks = Vec::new();
-
-    for disk_arg in disk_args {
-        let canonical_path = fs::canonicalize(&disk_arg)
-            .await
-            .map_err(|why| DiskError::NoDisk { disk: disk_arg.clone(), why })?;
-
-        for mount in mounts {
-            if mount.spec.as_bytes().starts_with(canonical_path.as_os_str().as_bytes()) {
-                if unmount {
-                    eprintln!(
-                        "unmounting '{}': {:?} is mounted at {:?}",
-                        disk_arg.display(),
-                        mount.spec,
-                        mount.file
-                    );
-
-                    Command::new("umount").arg(&mount.spec).status().map_result().map_err(
-                        |why| DiskError::UnmountCommand {
-                            path: PathBuf::from(mount.spec.clone()).into_boxed_path(),
-                            why,
-                        },
-                    )?;
-                } else {
-                    return Err(DiskError::AlreadyMounted {
-                        arg: disk_arg.clone(),
-                        source_: PathBuf::from(mount.spec.clone()).into_boxed_path(),
-                        dest: PathBuf::from(mount.file.clone()).into_boxed_path(),
-                    });
-                }
-            }
-        }
-
-        let metadata = canonical_path
-            .metadata()
-            .await
-            .map_err(|why| DiskError::Metadata { arg: disk_arg.clone(), why })?;
-
-        if !metadata.file_type().is_block_device() {
-            return Err(DiskError::NotABlock { arg: disk_arg.clone() });
-        }
-
-        let disk = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .custom_flags(libc::O_SYNC)
-            .open(&canonical_path)
-            .await
-            .map_err(|why| DiskError::Open { disk: disk_arg.clone(), why })?;
-
-        disks.push((canonical_path.into_boxed_path(), disk));
-    }
-
-    Ok(disks)
 }
 
 #[async_trait]

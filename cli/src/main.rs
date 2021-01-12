@@ -99,19 +99,12 @@ async fn popsicle(
         return Err(anyhow!("no disks specified"));
     }
 
-    let mounts = mnt::get_submounts(Path::new("/")).context("error reading mounts")?;
-
-    let disks =
-        popsicle::disks_from_args(disk_args.into_iter(), &mounts, matches.is_present("unmount"))
-            .await
-            .context("failed to open disks")?;
-
     let is_tty = atty::is(atty::Stream::Stdout);
 
     if is_tty && !matches.is_present("yes") {
         epint!(
             "Are you sure you want to flash '" (image_path) "' to the following drives?\n"
-            for (path, _) in &disks {
+            for path in &disk_args {
                 " - " (path.display()) "\n"
             }
             "y/N: "
@@ -136,7 +129,7 @@ async fn popsicle(
         let mut mb = MultiBar::new();
         let mut task = DDTask::new(&image_path, check);
 
-        for (disk_path, disk) in disks {
+        for disk_path in disk_args.into_iter() {
             let pb = InteractiveProgress::new(cascade! {
                 mb.create_bar(image_size);
                 ..set_units(Units::Bytes);
@@ -165,7 +158,7 @@ async fn popsicle(
         let mut paths = Vec::new();
         let mut task = DDTask::new(&image_path, check);
 
-        for (disk_path, disk) in disks {
+        for disk_path in disk_args.into_iter() {
             let pb = MachineProgress::new(paths.len(), etx.clone());
             paths.push(disk_path.clone());
             let disk = UnixDevice::from_path(&disk_path).await.unwrap(); // XXX unwrap
