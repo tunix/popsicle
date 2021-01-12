@@ -132,7 +132,7 @@ pub trait Task<D: Device, P: Progress>: Send {
     // Could it take a Read + Seek? Not useful with extractor... define a new type?
     // Trait with a method to return a reader
     // Not useful if task needs to mount iso
-    fn new<T: AsRef<Path>>(image_path: &T, check: bool) -> Self;
+    async fn new<T: AsRef<Path> + Send + Sync>(image_path: T, check: bool) -> Self;
     async fn subscribe(&mut self, device: D, progress_device: P::Device, progress: P) -> io::Result<()>;
     async fn process(self, buf: &mut [u8]) -> anyhow::Result<()>;
 }

@@ -127,7 +127,7 @@ async fn popsicle(
         println!();
 
         let mut mb = MultiBar::new();
-        let mut task = DDTask::new(&image_path, check);
+        let mut task = DDTask::new(&image_path, check).await;
 
         for disk_path in disk_args.into_iter() {
             let pb = InteractiveProgress::new(cascade! {
@@ -156,7 +156,7 @@ async fn popsicle(
     } else {
         let (etx, erx) = mpsc::unbounded();
         let mut paths = Vec::new();
-        let mut task = DDTask::new(&image_path, check);
+        let mut task = DDTask::new(&image_path, check).await;
 
         for disk_path in disk_args.into_iter() {
             let pb = MachineProgress::new(paths.len(), etx.clone());

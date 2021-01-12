@@ -1,6 +1,6 @@
 use anyhow::Context;
 use async_std::{fs::File, prelude::*};
-use srmw::*;
+use srmw::{CopyEvent, MultiWriter, ValidationEvent};
 use std::{collections::HashMap, io::SeekFrom, time::Instant};
 
 pub trait Progress: Send {
