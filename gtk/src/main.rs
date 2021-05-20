@@ -29,7 +29,8 @@ fn main() {
 
     gresource::init().expect("failed to init popsicle gresource");
 
-    glib::set_program_name("Popsicle".into());
+    glib::set_prgname(Some("com.system76.Popsicle"));
+    gdk::set_program_class("Popsicle");
     glib::set_application_name("Popsicle");
 
     let app = App::new(State::new());

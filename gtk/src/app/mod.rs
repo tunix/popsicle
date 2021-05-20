@@ -11,7 +11,7 @@ use self::widgets::*;
 
 use crate::fl;
 use gtk::{self, prelude::*};
-use std::{fs::File, process, rc::Rc, sync::Arc};
+use std::{fs::File, rc::Rc, sync::Arc};
 
 const CSS: &str = include_str!("ui.css");
 
@@ -22,11 +22,6 @@ pub struct App {
 
 impl App {
     pub fn new(state: State) -> Self {
-        if gtk::init().is_err() {
-            eprintln!("failed to initialize GTK Application");
-            process::exit(1);
-        }
-
         App { ui: Rc::new(GtkUi::new()), state: Arc::new(state) }
     }
 
