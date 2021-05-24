@@ -32,3 +32,6 @@ serde = "1.0"
 srmw = "0.1"
 thiserror = "1"
 usb-disk-probe = "0.1"
+walkdir = "2.3.2"
+zbus = { git = "https://gitlab.freedesktop.org/dbus/zbus/", branch = "main" }
+zvariant = { git = "https://gitlab.freedesktop.org/dbus/zbus/", branch = "main" }

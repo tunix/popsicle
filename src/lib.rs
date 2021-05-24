@@ -11,7 +11,12 @@ pub mod codec;
 
 mod task;
 
+mod win;
+
+mod zbus_udisks2;
+
 pub use self::task::{Progress, Task};
+pub use self::win::WinTask;
 
 use anyhow::Context;
 use as_result::MapResult;

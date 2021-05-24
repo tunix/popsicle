@@ -42,7 +42,7 @@ task-finished = Complete
 error = error: {$why}
 partial-flash = {$number} of {$total} devices successfully flashed
 successful-flash = {$total} devices successfully flashed
-win-isos-not-supported = Windows ISOs are not currently supported
+win-iso-detected = Windows ISO detected. Using Windows flasher
 
 # Errors
 iso-open-failed = Failed to open ISO

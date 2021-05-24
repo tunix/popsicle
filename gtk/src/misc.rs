@@ -1,6 +1,8 @@
 use dbus_udisks2::DiskDevice;
 use gdk;
 use gtk::{self, prelude::*, SelectionData};
+use iso9660::ISO9660;
+use std::fs::File;
 
 // Implements drag and drop support for a GTK widget.
 pub fn drag_and_drop<W, F>(widget: &W, action: F)
@@ -35,4 +37,11 @@ pub fn device_label(device: &DiskDevice) -> String {
     } else {
         format!("{} {} ({})", device.drive.vendor, device.drive.model, device.parent.preferred_device.display())
     }
+}
+
+pub fn is_windows_iso(file: &File) -> bool {
+    if let Ok(fs) = ISO9660::new(file) {
+        return fs.publisher_identifier() == "MICROSOFT CORPORATION";
+    }
+    false
 }

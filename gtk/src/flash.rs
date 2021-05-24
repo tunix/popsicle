@@ -1,10 +1,11 @@
 use atomic::Atomic;
+use crate::misc;
 use dbus::arg::{OwnedFd, RefArg, Variant};
 use dbus::blocking::{Connection, Proxy};
 use dbus_udisks2::DiskDevice;
 use futures::executor;
 use libc;
-use popsicle::{Progress, Task};
+use popsicle::{Progress, Task, WinTask};
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Display, Formatter};
@@ -104,6 +105,8 @@ impl FlashRequest {
     }
 
     fn write_inner<'a>(&'a self, source: File) -> anyhow::Result<(anyhow::Result<()>, Vec<Result<(), FlashError>>)> {
+        let is_windows = misc::is_windows_iso(&source);
+
         // Unmount the devices beforehand.
         for device in &self.destinations {
             let _ = udisks_unmount(&device.parent.path);
@@ -112,26 +115,36 @@ impl FlashRequest {
             }
         }
 
-        // Then open them for writing to.
-        let mut files = Vec::new();
-        for device in &self.destinations {
-            let file = udisks_open(&device.parent.path)?;
-            files.push(file);
-        }
-
-        let mut errors = vec![Ok(()); files.len()];
+        let mut errors = vec![Ok(()); self.destinations.len()];
         let errors_cells = Cell::from_mut(&mut errors as &mut [_]).as_slice_of_cells();
 
-        // How many bytes to write at a given time.
-        let mut bucket = [0u8; 64 * 1024];
+        let res = if is_windows {
+            let mut task = WinTask::new(source.into());
+            for (i, dest) in self.destinations.iter().enumerate() {
+                let progress = FlashProgress {request: &self, errors: errors_cells, id: i};
+                task.subscribe(dest.parent.path.clone(), (), progress);
+            }
 
-        let mut task = Task::new(source.into(), false);
-        for (i, file) in files.into_iter().enumerate() {
-            let progress = FlashProgress {request: &self, errors: errors_cells, id: i};
-            task.subscribe(file.into(), (), progress);
-        }
+            executor::block_on(task.process())
+        } else {
+            // Then open them for writing to.
+            let mut files = Vec::new();
+            for device in &self.destinations {
+                let file = udisks_open(&device.parent.path)?;
+                files.push(file);
+            }
 
-        let res = executor::block_on(task.process(&mut bucket));
+            let mut task = Task::new(source.into(), false);
+            for (i, file) in files.into_iter().enumerate() {
+                let progress = FlashProgress {request: &self, errors: errors_cells, id: i};
+                task.subscribe(file.into(), (), progress);
+            }
+
+            // How many bytes to write at a given time.
+            let mut bucket = [0u8; 64 * 1024];
+
+            executor::block_on(task.process(&mut bucket))
+        };
 
         Ok((res, errors))
     }
